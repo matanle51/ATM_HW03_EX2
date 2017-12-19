@@ -55,12 +55,18 @@ int main(int argc, char **argv)
 
 	// Create thread in remote process with LoadLibraryA function as thread function
 	HANDLE hThread = NULL;
+	sprintf_s(debugBuf, 256, "[Info] Before CreateRemoteThread function");
+	OutputDebugStringA(debugBuf);
+
 	hThread = CreateRemoteThread(rProcessHandle, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, pDllName, NULL, NULL);
 	if (hThread == NULL) {
 		sprintf_s(debugBuf, 256, "[Error] Cannot create thread in remote process with PID: %d ,With Error Code: %d", pid, GetLastError());
 		OutputDebugStringA(debugBuf);
 		return 0;
 	}
+	sprintf_s(debugBuf, 256, "[Info] Thread Created Successfully");
+	OutputDebugStringA(debugBuf);
+
 	return 1;
 }
 
