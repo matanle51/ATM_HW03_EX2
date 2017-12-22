@@ -6,7 +6,7 @@
 #include <string>
 using namespace std;
 
-const char* injectedDllName = "C:\\Users\\IEUser\\Desktop\\injected.dll";
+const char* injectedDllName = "C:\\Users\\IEUser\\Desktop\\injected-2.dll";
 
 int main(int argc, char **argv)
 {
