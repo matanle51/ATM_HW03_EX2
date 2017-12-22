@@ -18,8 +18,7 @@ int main(int argc, char **argv)
 
 	// Get DLL full path (in current directory)
 	char workingDir[MAX_PATH];
-	int const bytes = GetModuleFileNameA(NULL, workingDir, MAX_PATH);
-	if (bytes == 0)
+	if (!GetModuleFileNameA(NULL, workingDir, MAX_PATH))
 		return -1;
 
 	string injectedDLLPath(workingDir);
@@ -61,8 +60,7 @@ int main(int argc, char **argv)
 	OutputDebugStringA("[Info] Before CreateRemoteThread function");
 	
 	// Create thread in remote process with LoadLibraryA function as thread function
-	HANDLE const hThread = CreateRemoteThread(rProcessHandle, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, pDllName, NULL, NULL);
-	if (hThread == NULL) {
+	if (!CreateRemoteThread(rProcessHandle, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, pDllName, NULL, NULL)) {
 		OutputDebugStringA((string("[Error] Cannot create thread in remote process with PID: " + pid) + string(", With Error Code: " + GetLastError())).c_str());
 		return 0;
 	}

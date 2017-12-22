@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void** getFunctionAddress(char const* wantedFunctionName, char const* wantedDllName);
+void** getFunctionAddress(string const& const wantedFunctionName, string const& const wantedDllName);
 
 enum MyMalicious {
 	_MyMaliciousReadConsoleW,
@@ -30,6 +30,6 @@ BOOL WINAPI MyMaliciousWriteConsoleW(
 	_Reserved_       LPVOID  lpReserved
 );
 
-void writeToFile(char const* _Filename, char const* opening, void const* lpBuffer, MyMalicious func);
+void writeToFile(string const& const _Filename, string const& const opening, void const* lpBuffer, MyMalicious const& const func);
 
-void PatchIAT(char const* const wantedFunctionName, char const* const wantedDllName, MyMalicious func);
+void PatchIAT(string const& const wantedFunctionName, string const& const wantedDllName, MyMalicious const& const func);
