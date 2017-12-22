@@ -4,9 +4,10 @@
 #include <sstream>
 #include <windows.h>
 #include <string>
+#include <algorithm>
 using namespace std;
 
-const char* injectedDllName = "C:\\Users\\IEUser\\Desktop\\injected-2.dll";
+const char* injectedDllName = "injected-2.dll";
 
 int main(int argc, char **argv)
 {
@@ -19,6 +20,13 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	// Get DLL full path (in current directory)
+	string injectedDLLPath(argv[0]);
+	int found = injectedDLLPath.find_last_of("\\");
+	injectedDLLPath.replace(found + 1, 14, injectedDllName);
+	//printf("%s", injectedDLLPath.c_str());
+	//sprintf_s(debugBuf, 256, injectedDLLPath.c_str());
+	OutputDebugStringA(injectedDLLPath.c_str());
 	// Get pid of the victim process from the given argument
 	int pid = atoi(argv[1]);
 
@@ -39,7 +47,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	LPVOID pDllName = VirtualAllocEx(rProcessHandle, NULL, strlen(injectedDllName), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	LPVOID pDllName = VirtualAllocEx(rProcessHandle, NULL, strlen(injectedDLLPath.c_str()), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	if (pDllName == NULL) {
 		sprintf_s(debugBuf, 256, "[Error] Cannot allocate memory in remote process with PID: %d", pid);
 		OutputDebugStringA(debugBuf);
@@ -47,7 +55,7 @@ int main(int argc, char **argv)
 	}
 
 	// Write DLL name to allocated memory in the virtual space of the remote process
-	if (!WriteProcessMemory(rProcessHandle, pDllName, injectedDllName, strlen(injectedDllName), NULL)) {
+	if (!WriteProcessMemory(rProcessHandle, pDllName, injectedDLLPath.c_str(), strlen(injectedDLLPath.c_str()), NULL)) {
 		sprintf_s(debugBuf, 256, "[Error] Cannot write memory in remote process with PID: %d", pid);
 		OutputDebugStringA(debugBuf);
 		return 0;
