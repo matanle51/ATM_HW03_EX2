@@ -1,86 +1,73 @@
-
-// #include <stdio.h>
-#include <iostream>
-#include <sstream>
+#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+// Windows Header Files:
 #include <windows.h>
 
 #include <string>
-#include <algorithm>
 using namespace std;
 
-const char* injectedDllName = "injected-2.dll";
+char const* const injectedDllName = "injected-2.dll";
 
 int main(int argc, char **argv)
 {
-	char debugBuf[256];
-
 	// Check for correct number of arguments - 1 argument is excepted
 	if (argc != 2) {
-		sprintf_s(debugBuf, 256, "[Error] Wrong number of arguments");
-		OutputDebugStringA(debugBuf);
+		OutputDebugStringA("[Error] Wrong number of arguments");
 		return 0;
 	}
 
 	// Get DLL full path (in current directory)
 	char workingDir[MAX_PATH];
-	int bytes = GetModuleFileNameA(NULL, workingDir, MAX_PATH);
+	int const bytes = GetModuleFileNameA(NULL, workingDir, MAX_PATH);
 	if (bytes == 0)
 		return -1;
 
 	string injectedDLLPath(workingDir);
-	int found = injectedDLLPath.find_last_of("\\");
+	int const found = injectedDLLPath.find_last_of("\\");
 	injectedDLLPath.replace(found + 1, 14, injectedDllName);
-	//printf("%s", injectedDLLPath.c_str());
-	//sprintf_s(debugBuf, 256, injectedDLLPath.c_str());
 	
 	OutputDebugStringA(injectedDLLPath.c_str());
 	// Get pid of the victim process from the given argument
-	int pid = atoi(argv[1]);
+	int const pid = atoi(argv[1]);
 
 	// Get the address of "LoadLibraryA" of current process
-	DWORD pLoadLibraryA = (DWORD)GetProcAddress(GetModuleHandle(L"kernel32.dll"), "LoadLibraryA");
+	DWORD const pLoadLibraryA = (DWORD)GetProcAddress(GetModuleHandle(L"kernel32.dll"), "LoadLibraryA");
 	if (pLoadLibraryA == NULL) {
-		sprintf_s(debugBuf, 256, "[Error] Cannot find LoadLibraryA address in kernel32.dll");
-		OutputDebugStringA(debugBuf);
+		OutputDebugStringA("[Error] Cannot find LoadLibraryA address in kernel32.dll");
 		return 0;
 	}
 
-	// Allocate memory on the virtual space of the remote process
-	DWORD processSecurityAttributes = PROCESS_VM_OPERATION | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE;
-	HANDLE rProcessHandle = OpenProcess(processSecurityAttributes, FALSE, (DWORD)pid); // Process security attributes are required for the createRemoteThread hProcess parameter
+	HANDLE const rProcessHandle = 
+		// Allocate memory on the virtual space of the remote process
+		OpenProcess(PROCESS_VM_OPERATION | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE 
+			, FALSE, (DWORD)pid); // Process security attributes are required for the createRemoteThread hProcess parameter
+	OutputDebugStringA("[Error] Cannot get handle to remote process with PID: " + pid);
 	if (rProcessHandle == NULL) {
-		sprintf_s(debugBuf, 256, "[Error] Cannot get handle to remote process with PID: %d", pid);
-		OutputDebugStringA(debugBuf);
+		OutputDebugStringA("[Error] Cannot get handle to remote process with PID: " + pid);
 		return 0;
 	}
 
-	LPVOID pDllName = VirtualAllocEx(rProcessHandle, NULL, strlen(injectedDLLPath.c_str()), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	LPVOID const pDllName = VirtualAllocEx(rProcessHandle, NULL, strlen(injectedDLLPath.c_str()), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	if (pDllName == NULL) {
-		sprintf_s(debugBuf, 256, "[Error] Cannot allocate memory in remote process with PID: %d", pid);
-		OutputDebugStringA(debugBuf);
+		OutputDebugStringA("[Error] Cannot allocate memory in remote process with PID: " + pid);
 		return 0;
 	}
 
 	// Write DLL name to allocated memory in the virtual space of the remote process
 	if (!WriteProcessMemory(rProcessHandle, pDllName, injectedDLLPath.c_str(), strlen(injectedDLLPath.c_str()), NULL)) {
-		sprintf_s(debugBuf, 256, "[Error] Cannot write memory in remote process with PID: %d", pid);
-		OutputDebugStringA(debugBuf);
+		OutputDebugStringA("[Error] Cannot write memory in remote process with PID: " + pid);
 		return 0;
 	}
 
+	OutputDebugStringA("[Info] Before CreateRemoteThread function");
+	
 	// Create thread in remote process with LoadLibraryA function as thread function
-	HANDLE hThread = NULL;
-	sprintf_s(debugBuf, 256, "[Info] Before CreateRemoteThread function");
-	OutputDebugStringA(debugBuf);
-
-	hThread = CreateRemoteThread(rProcessHandle, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, pDllName, NULL, NULL);
+	HANDLE const hThread = CreateRemoteThread(rProcessHandle, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, pDllName, NULL, NULL);
+	OutputDebugStringA((string("[Error] Cannot create thread in remote process with PID: " + pid) + string(", With Error Code: " + GetLastError())).c_str());
 	if (hThread == NULL) {
-		sprintf_s(debugBuf, 256, "[Error] Cannot create thread in remote process with PID: %d ,With Error Code: %d", pid, GetLastError());
-		OutputDebugStringA(debugBuf);
+		OutputDebugStringA((string("[Error] Cannot create thread in remote process with PID: " + pid) + string(", With Error Code: " + GetLastError())).c_str());
 		return 0;
 	}
-	sprintf_s(debugBuf, 256, "[Info] Thread Created Successfully");
-	OutputDebugStringA(debugBuf);
+	OutputDebugStringA("[Info] Thread Created Successfully");
 
 	return 1;
 }
