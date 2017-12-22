@@ -40,7 +40,6 @@ int main(int argc, char **argv)
 		// Allocate memory on the virtual space of the remote process
 		OpenProcess(PROCESS_VM_OPERATION | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE 
 			, FALSE, (DWORD)pid); // Process security attributes are required for the createRemoteThread hProcess parameter
-	OutputDebugStringA("[Error] Cannot get handle to remote process with PID: " + pid);
 	if (rProcessHandle == NULL) {
 		OutputDebugStringA("[Error] Cannot get handle to remote process with PID: " + pid);
 		return 0;
@@ -62,7 +61,6 @@ int main(int argc, char **argv)
 	
 	// Create thread in remote process with LoadLibraryA function as thread function
 	HANDLE const hThread = CreateRemoteThread(rProcessHandle, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, pDllName, NULL, NULL);
-	OutputDebugStringA((string("[Error] Cannot create thread in remote process with PID: " + pid) + string(", With Error Code: " + GetLastError())).c_str());
 	if (hThread == NULL) {
 		OutputDebugStringA((string("[Error] Cannot create thread in remote process with PID: " + pid) + string(", With Error Code: " + GetLastError())).c_str());
 		return 0;
