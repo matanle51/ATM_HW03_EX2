@@ -8,5 +8,28 @@
 using namespace std;
 
 void** getFunctionAddress(char const* wantedFunctionName, char const* wantedDllName);
-int WINAPI MyMaliciousFunction(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType);
-void PatchIAT(char const* const wantedFunctionName, char const* const wantedDllName);
+
+enum MyMalicious {
+	_MyMaliciousReadConsoleW,
+	_MyMaliciousWriteConsoleW
+};
+
+BOOL WINAPI MyMaliciousReadConsoleW(
+	_In_     HANDLE  hConsoleInput,
+	_Out_    LPVOID  lpBuffer,
+	_In_     DWORD   nNumberOfCharsToRead,
+	_Out_    LPDWORD lpNumberOfCharsRead,
+	_In_opt_ PCONSOLE_READCONSOLE_CONTROL  pInputControl
+);
+
+BOOL WINAPI MyMaliciousWriteConsoleW(
+	_In_             HANDLE  hConsoleOutput,
+	_In_       const VOID    *lpBuffer,
+	_In_             DWORD   nNumberOfCharsToWrite,
+	_Out_            LPDWORD lpNumberOfCharsWritten,
+	_Reserved_       LPVOID  lpReserved
+);
+
+void writeToFile(char const* _Filename, char const* opening, void const* lpBuffer, MyMalicious func);
+
+void PatchIAT(char const* const wantedFunctionName, char const* const wantedDllName, MyMalicious func);
