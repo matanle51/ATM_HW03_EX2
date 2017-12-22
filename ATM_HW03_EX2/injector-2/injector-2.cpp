@@ -3,6 +3,9 @@
 #include <windows.h>
 
 #include <string>
+
+#include "injected-2.h"
+
 using namespace std;
 
 char const* const injectedDllName = "injected-2.dll";
