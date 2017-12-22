@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <windows.h>
+
 #include <string>
 #include <algorithm>
 using namespace std;
@@ -21,11 +22,17 @@ int main(int argc, char **argv)
 	}
 
 	// Get DLL full path (in current directory)
-	string injectedDLLPath(argv[0]);
+	char workingDir[MAX_PATH];
+	int bytes = GetModuleFileNameA(NULL, workingDir, MAX_PATH);
+	if (bytes == 0)
+		return -1;
+
+	string injectedDLLPath(workingDir);
 	int found = injectedDLLPath.find_last_of("\\");
 	injectedDLLPath.replace(found + 1, 14, injectedDllName);
 	//printf("%s", injectedDLLPath.c_str());
 	//sprintf_s(debugBuf, 256, injectedDLLPath.c_str());
+	
 	OutputDebugStringA(injectedDLLPath.c_str());
 	// Get pid of the victim process from the given argument
 	int pid = atoi(argv[1]);
