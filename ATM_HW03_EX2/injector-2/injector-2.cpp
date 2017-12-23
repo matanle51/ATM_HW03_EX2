@@ -6,7 +6,7 @@
 
 using namespace std;
 
-char const* const injectedDllName = "injected-2.dll";
+constexpr char injectedDllName[15] = "injected-2.dll";
 
 int main(int argc, char **argv)
 {
