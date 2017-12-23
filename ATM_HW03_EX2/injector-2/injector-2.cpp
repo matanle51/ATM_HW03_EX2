@@ -22,24 +22,18 @@ int main(int argc, char **argv)
 		return -1;
 
 	string injectedDLLPath(workingDir);
-	int const found = injectedDLLPath.find_last_of("\\");
+	size_t const& found = injectedDLLPath.find_last_of("\\");
 	injectedDLLPath.replace(found + 1, 14, injectedDllName);
 	
 	OutputDebugStringA(injectedDLLPath.c_str());
+
 	// Get pid of the victim process from the given argument
-	int const pid = atoi(argv[1]);
+	DWORD const& pid = static_cast<DWORD>(atoi(argv[1]));
 
-	// Get the address of "LoadLibraryA" of current process
-	DWORD const pLoadLibraryA = (DWORD)GetProcAddress(GetModuleHandle(L"kernel32.dll"), "LoadLibraryA");
-	if (pLoadLibraryA == NULL) {
-		OutputDebugStringA("[Error] Cannot find LoadLibraryA address in kernel32.dll");
-		return 0;
-	}
-
-	HANDLE const rProcessHandle = 
+	HANDLE const rProcessHandle =
 		// Allocate memory on the virtual space of the remote process
 		OpenProcess(PROCESS_VM_OPERATION | PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE 
-			, FALSE, (DWORD)pid); // Process security attributes are required for the createRemoteThread hProcess parameter
+			, FALSE, pid); // Process security attributes are required for the createRemoteThread hProcess parameter
 	if (rProcessHandle == NULL) {
 		OutputDebugStringA("[Error] Cannot get handle to remote process with PID: " + pid);
 		return 0;
@@ -56,12 +50,18 @@ int main(int argc, char **argv)
 		OutputDebugStringA("[Error] Cannot write memory in remote process with PID: " + pid);
 		return 0;
 	}
-
 	OutputDebugStringA("[Info] Before CreateRemoteThread function");
 	
+	// Get the address of "LoadLibraryA" of current process
+	DWORD const& pLoadLibraryA = reinterpret_cast<DWORD const>(GetProcAddress(GetModuleHandle(L"kernel32.dll"), "LoadLibraryA"));
+	if (pLoadLibraryA == NULL) {
+		OutputDebugStringA("[Error] Cannot find LoadLibraryA address in kernel32.dll");
+		return 0;
+	}
+
 	// Create thread in remote process with LoadLibraryA function as thread function
-	if (!CreateRemoteThread(rProcessHandle, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, pDllName, NULL, NULL)) {
-		OutputDebugStringA((string("[Error] Cannot create thread in remote process with PID: " + pid) + string(", With Error Code: " + GetLastError())).c_str());
+	if (!CreateRemoteThread(rProcessHandle, NULL, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pLoadLibraryA), pDllName, NULL, NULL)) {
+		OutputDebugStringA(("[Error] Cannot create thread in remote process with PID: " + pid + string(", With Error Code: " + GetLastError())).c_str());
 		return 0;
 	}
 	OutputDebugStringA("[Info] Thread Created Successfully");
